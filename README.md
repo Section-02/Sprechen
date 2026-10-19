@@ -70,6 +70,6 @@ xcodebuild -project Sprechen.xcodeproj -scheme Sprechen \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
-After adding source files, regenerate the checked-in project with `python3 scripts/generate_project.py`. The script does not set a signing team. `scripts/make_icon.swift` generates the included icon using native drawing primitives.
+After adding source files, regenerate the checked-in project with `python3 scripts/generate_project.py`. The script does not set a signing team. `scripts/make_icon.swift` packages the beer-steins artwork in `App/Artwork/beer-steins.png` into the required opaque app icon sizes. See `docs/ICON.md` for the artwork prompt.
 
 See `docs/TESTING.md` for device acceptance checks and `docs/DECISIONS.md` for the agreed feature scope.
