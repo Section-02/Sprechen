@@ -22,3 +22,12 @@ Run on iPhone 11 and iPhone 14 Pro. Include an actual iOS 16 device/runtime if a
 ## Known verification limits
 
 A successful build verifies API availability for the iOS 16 deployment target but does not prove runtime behavior on every iOS release. Real microphone recognition cannot be validated from the simulator. Interactive simulator control was unavailable during initial development, so visual and touch acceptance remain to be completed.
+
+## Initial build results — October 19, 2026
+
+- 11 core tests passed with no failures, including incremental edits/deletions and rollback.
+- Simulator build succeeded; initial app launched on the iPhone 11 / iOS 26.5 simulator.
+- Unsigned physical-iPhone build succeeded with minimum deployment target iOS 16.0.
+- Property lists and Xcode project validated.
+- App icon rendering inspected and corrected.
+- Signing team selection, installation on the two physical phones, microphone checks, and interactive visual acceptance remain.
