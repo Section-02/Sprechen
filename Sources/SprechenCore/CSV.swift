@@ -129,7 +129,7 @@ public enum ProgressCSV {
             case "settings":
                 guard let pool = Pool(rawValue: row[5]), result.settings[pool.rawValue] == nil else { throw SprechenError.message("Invalid or duplicate pool settings.") }
                 let config = try decoder.decode(PoolSettings.self, from: data)
-                guard (1...500).contains(config.limit), (1...50).contains(config.target), config.turn >= 0 && config.turn < 1_000_000_000 else { throw SprechenError.message("Invalid study settings in backup.") }
+                guard (1...500).contains(config.limit), (1...50).contains(config.target), (1...365).contains(config.firstReviewDays), (1...365).contains(config.secondReviewDays), config.turn >= 0 && config.turn < 1_000_000_000 else { throw SprechenError.message("Invalid study settings in backup.") }
                 result.settings[pool.rawValue] = config
             case "progress":
                 var p = try decoder.decode(Progress.self, from: data)

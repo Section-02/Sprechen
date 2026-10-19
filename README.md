@@ -20,11 +20,11 @@ The home screen has **English → German**, **German → English**, and **Mixed*
 - Mixed uses its own streak and graduation state, with a randomly selected translation direction on each card. Its streak spans both directions.
 - A pool with fewer eligible pairs than its limit uses all eligible pairs. A limit of 50 with 30 eligible pairs means 30 active pairs.
 - Correct answers increase spacing. Incorrect answers reset the streak and return the pair after other cards where possible. If only one pair is available, it can repeat immediately.
-- Two lifetime misses in a pool mark a pair as difficult. At the streak target it enters **Reinforce**: first review after 24 hours, then a second review 72 hours after passing the first. A miss resets the streak and returns it to Learning. No early Reinforce reviews.
+- Two lifetime misses in a pool mark a pair as difficult. At the streak target it enters **Reinforce**: first review after 1 day, then a second review 3 days after passing the first by default. Both intervals are adjustable per pool from 1–365 days. Changes reschedule waiting reviews from their last graded answer. A miss resets the streak and returns it to Learning. No early Reinforce reviews.
 - Other pairs graduate immediately at the target. A graduated pair stops appearing only in its own pool, which fills the vacancy from eligible words.
 - Reinforce pairs count toward the active limit. A fully resting pool shows its next review time.
 - Lowering a limit parks surplus pairs and preserves progress. Raising it resumes parked work before introducing new pairs.
-- Settings changes take effect on the next answer; already graduated pairs stay graduated.
+- Graduation target changes take effect on the next answer; already graduated pairs stay graduated. Reinforce interval changes update waiting review dates immediately.
 - Pause hides a word from all pools. Reactivate preserves answer history and total counts, resets streaks, and makes previously used pools eligible to resume it.
 - Every graded answer is saved before advancing. End a session whenever you like.
 

@@ -16,10 +16,6 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    Label("Small sessions. Steady progress.", systemImage: "sparkles").font(.headline)
-                    Text("Each exercise has its own word pool and graduation progress.").font(.subheadline).foregroundStyle(.secondary)
-                }
                 ForEach(Pool.allCases) { pool in
                     Section(pool.title) {
                         Stepper(value: Binding(get: { model.state.configuration(pool).limit }, set: { model.configure(pool, limit: $0) }), in: 1...500) {
@@ -28,39 +24,24 @@ struct SettingsView: View {
                         Stepper(value: Binding(get: { model.state.configuration(pool).target }, set: { model.configure(pool, target: $0) }), in: 1...50) {
                             Text("Consecutive correct: \(model.state.configuration(pool).target)")
                         }
-                        if pool == .mixed {
-                            Text("Uses pairs already answered in either directional exercise. If fewer pairs qualify than your limit, it uses the available pairs.").font(.footnote).foregroundStyle(.secondary)
+                        Stepper(value: Binding(get: { model.state.configuration(pool).firstReviewDays }, set: { model.configureReinforce(pool, firstDays: $0) }), in: 1...365) {
+                            Text("First Reinforce: \(dayLabel(model.state.configuration(pool).firstReviewDays))")
+                        }
+                        Stepper(value: Binding(get: { model.state.configuration(pool).secondReviewDays }, set: { model.configureReinforce(pool, secondDays: $0) }), in: 1...365) {
+                            Text("Second Reinforce: \(dayLabel(model.state.configuration(pool).secondReviewDays))")
                         }
                     }
-                }
-                Section("Reinforce") {
-                    Text("After two misses, a pair needs extra confirmation. Reach your correct streak, then pass a review after 1 day and another 3 days later. A miss resets the streak and returns the pair to Learning.")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                    Text("Reinforce pairs count toward the active limit. Lowering a limit parks surplus pairs without losing their history. Graduation settings apply on the next answer.")
-                        .font(.footnote).foregroundStyle(.secondary)
                 }
                 Section("Vocabulary CSV") {
                     Button { importProgress = false; importing = true } label: { Label("Import vocabulary", systemImage: "square.and.arrow.down") }
                     Button { export(progress: false) } label: { Label("Export vocabulary", systemImage: "square.and.arrow.up") }
-                    Text("Share word pairs between phones without changing either person’s settings or progress. Required columns: german, english. Exact duplicates are skipped; conflicts are yours to resolve.")
-                        .font(.footnote).foregroundStyle(.secondary)
                 }
                 Section("Progress CSV") {
                     Button { export(progress: true) } label: { Label("Export progress and settings", systemImage: "square.and.arrow.up") }
                     Button { importProgress = true; importing = true } label: { Label("Restore progress and settings", systemImage: "arrow.counterclockwise") }
-                    Text("For a full manual backup, export both CSV files. To restore, import vocabulary first, then progress. Restoring replaces this phone’s progress and settings.")
-                        .font(.footnote).foregroundStyle(.secondary)
                 }
-                Section("Strictly local") {
-                    Label("SQLite storage on this iPhone", systemImage: "internaldrive")
-                    Label("Excluded from automatic device backups", systemImage: "icloud.slash")
-                    Label("Speech runs on-device only", systemImage: "mic")
-                    Text("No accounts, analytics, or sync. If local speech isn’t supported, study silently. When exporting CSV files, choose On My iPhone or another local destination—not iCloud Drive. Copies you export are controlled by the destination you choose.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
-                Section { Text("Sprechen · Made for a few words at a time.").font(.footnote).foregroundStyle(.secondary) }
             }
-            .navigationTitle("Your pace")
+            .navigationTitle("Settings")
             .fileImporter(isPresented: $importing, allowedContentTypes: [.commaSeparatedText, .plainText], allowsMultipleSelection: false) { result in
                 do {
                     guard let url = try result.get().first else { return }
@@ -75,7 +56,7 @@ struct SettingsView: View {
             .sheet(isPresented: $showVocabularyReview) { VocabularyImportView(entries: entries).environmentObject(model) }
             .fileExporter(isPresented: $exporting, document: document, contentType: .commaSeparatedText, defaultFilename: filename) { result in
                 switch result {
-                case .success: resultMessage = "CSV exported. Keep both vocabulary and progress files for a full backup."
+                case .success: resultMessage = "CSV exported."
                 case .failure(let error): model.error = error.localizedDescription
                 }
             }
@@ -91,6 +72,7 @@ struct SettingsView: View {
             } message: { Text(resultMessage ?? "") }
         }
     }
+    private func dayLabel(_ days: Int) -> String { "\(days) \(days == 1 ? "day" : "days")" }
     private func export(progress: Bool) {
         do {
             document = CSVDocument(text: try progress ? ProgressCSV.export(model.state) : VocabularyCSV.export(model.state))

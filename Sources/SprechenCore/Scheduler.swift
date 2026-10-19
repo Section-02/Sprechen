@@ -67,11 +67,11 @@ public enum Scheduler {
                 progress.reinforceStep += 1
                 if progress.reinforceStep >= 2 {
                     progress.status = .mastered; progress.active = false; progress.dueAt = nil
-                } else { progress.dueAt = now.addingTimeInterval(3 * 86_400) }
+                } else { progress.dueAt = now.addingTimeInterval(Double(config.secondReviewDays) * 86_400) }
             } else if progress.streak >= config.target {
                 if progress.misses >= 2 {
                     progress.status = .reinforce; progress.reinforceStep = 0
-                    progress.dueAt = now.addingTimeInterval(86_400)
+                    progress.dueAt = now.addingTimeInterval(Double(config.firstReviewDays) * 86_400)
                 } else { progress.status = .mastered; progress.active = false }
             } else { progress.nextTurn = config.turn + min(12, 1 << min(progress.streak, 4)) }
         } else {
@@ -82,6 +82,20 @@ public enum Scheduler {
         state.progress[progress.key] = progress
         state.reviews.append(Review(wordID: wordID, pool: pool, direction: direction, correct: correct, date: now))
         replenish(pool, state: &state)
+    }
+
+    public static func setReinforceDelays(_ pool: Pool, firstDays: Int? = nil, secondDays: Int? = nil, state: inout AppState) {
+        var config = state.configuration(pool)
+        if let firstDays { config.firstReviewDays = min(365, max(1, firstDays)) }
+        if let secondDays { config.secondReviewDays = min(365, max(1, secondDays)) }
+        state.settings[pool.rawValue] = config
+        // Recalculate from the last graded answer, never from the time the setting changes.
+        for key in Array(state.progress.keys) {
+            guard let progress = state.progress[key], progress.pool == pool,
+                  progress.status == .reinforce, let anchor = progress.lastSeen else { continue }
+            let days = progress.reinforceStep == 0 ? config.firstReviewDays : config.secondReviewDays
+            state.progress[key]?.dueAt = anchor.addingTimeInterval(Double(days) * 86_400)
+        }
     }
 
     public static func setPaused(_ paused: Bool, wordID: UUID, state: inout AppState) {

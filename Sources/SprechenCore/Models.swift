@@ -57,7 +57,22 @@ public struct PoolSettings: Codable, Equatable {
     public var limit = 20
     public var target = 5
     public var turn = 0
+    public var firstReviewDays = 1
+    public var secondReviewDays = 3
     public init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case limit, target, turn, firstReviewDays, secondReviewDays
+    }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        limit = try values.decode(Int.self, forKey: .limit)
+        target = try values.decode(Int.self, forKey: .target)
+        turn = try values.decode(Int.self, forKey: .turn)
+        // Existing databases and older progress CSVs keep the original intervals.
+        firstReviewDays = try values.decodeIfPresent(Int.self, forKey: .firstReviewDays) ?? 1
+        secondReviewDays = try values.decodeIfPresent(Int.self, forKey: .secondReviewDays) ?? 3
+    }
 }
 
 public struct Review: Codable, Identifiable, Equatable {

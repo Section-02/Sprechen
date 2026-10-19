@@ -154,6 +154,42 @@ final class SprechenCoreTests: XCTestCase {
         XCTAssertEqual(try db.load(), s)
     }
 
+    func testCustomReinforceDelaysRescheduleAndSurviveBackup() throws {
+        var s = state(count: 1, target: 1)
+        Scheduler.replenish(.englishToGerman, state: &s)
+        let id = s.words[0].id
+        Scheduler.setReinforceDelays(.englishToGerman, firstDays: 2, secondDays: 7, state: &s)
+        try grade(id, correct: false, state: &s)
+        try grade(id, correct: false, state: &s)
+        try grade(id, state: &s)
+        XCTAssertEqual(s.progressFor(id, .englishToGerman)?.dueAt, now.addingTimeInterval(2 * 86_400))
+        Scheduler.setReinforceDelays(.englishToGerman, firstDays: 4, state: &s)
+        XCTAssertEqual(s.progressFor(id, .englishToGerman)?.dueAt, now.addingTimeInterval(4 * 86_400))
+        let firstReview = now.addingTimeInterval(4 * 86_400)
+        try grade(id, state: &s, at: firstReview)
+        XCTAssertEqual(s.progressFor(id, .englishToGerman)?.dueAt, firstReview.addingTimeInterval(7 * 86_400))
+        Scheduler.setReinforceDelays(.englishToGerman, secondDays: 2, state: &s)
+        XCTAssertEqual(s.progressFor(id, .englishToGerman)?.dueAt, firstReview.addingTimeInterval(2 * 86_400))
+        XCTAssertEqual(s.configuration(.germanToEnglish).firstReviewDays, 1)
+        XCTAssertEqual(s.configuration(.mixed).secondReviewDays, 3)
+        let restored = try ProgressCSV.restore(ProgressCSV.export(s), into: s)
+        XCTAssertEqual(restored.settings, s.settings)
+        XCTAssertEqual(restored.progress, s.progress)
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let database = try Database(url: folder.appendingPathComponent("test.sqlite"))
+        try database.save(s)
+        XCTAssertEqual(try database.load().settings, s.settings)
+    }
+
+    func testLegacySettingsKeepDefaultReinforceDelays() throws {
+        let data = Data(#"{"limit":20,"target":5,"turn":12}"#.utf8)
+        let config = try JSONDecoder().decode(PoolSettings.self, from: data)
+        XCTAssertEqual(config.firstReviewDays, 1)
+        XCTAssertEqual(config.secondReviewDays, 3)
+        XCTAssertEqual(config.turn, 12)
+    }
+
     func testMissedWordHasSpacingWhenAlternativesExist() throws {
         var s = state(count: 5); Scheduler.replenish(.englishToGerman, state: &s)
         let word = try XCTUnwrap(Scheduler.next(.englishToGerman, state: s))

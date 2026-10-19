@@ -57,6 +57,9 @@ final class AppModel: ObservableObject {
             Scheduler.replenish(pool, state: &state)
         }
     }
+    func configureReinforce(_ pool: Pool, firstDays: Int? = nil, secondDays: Int? = nil) {
+        update { Scheduler.setReinforceDelays(pool, firstDays: firstDays, secondDays: secondDays, state: &$0) }
+    }
     func readCSV(_ url: URL) throws -> String {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
