@@ -104,7 +104,7 @@ struct VocabularyImportView: View {
                 }
                 if index < entries.count {
                     Section("Resolve this conflict") {
-                        Text("This pair shares a word or identifier with existing vocabulary. Change the incoming text, replace a listed pair, or skip this row.")
+                        Text("This pair shares a word with existing vocabulary. Change the incoming text, replace a listed pair, or skip this row.")
                             .font(.subheadline).foregroundStyle(.secondary)
                         TextField("German", text: $german).autocorrectionDisabled().textInputAutocapitalization(.never)
                         TextField("English", text: $english).autocorrectionDisabled().textInputAutocapitalization(.never)

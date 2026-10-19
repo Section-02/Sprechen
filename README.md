@@ -40,7 +40,7 @@ das Fenster,the window
 lernen,to learn
 ```
 
-Exports add a stable `id` column. Quoted fields, commas, multiline text, UTF-8 BOM, and German characters are supported. Exact text-pair duplicates are skipped automatically. A shared identifier, German word, or English translation creates a conflict for the user to edit, replace, or skip. Imports are staged until confirmed, and invalid files cannot partially overwrite data. Replacing a pair retains its existing identifier and learning history.
+Vocabulary CSVs have only `german` and `english` columns. IDs are generated internally; any legacy ID column is ignored on import. Quoted fields, commas, multiline text, UTF-8 BOM, and German characters are supported. Exact text-pair duplicates are skipped automatically. A shared German word or English translation creates a conflict for the user to edit, replace, or skip. Imports are staged until confirmed, and invalid files cannot partially overwrite data. Replacing a pair retains its existing identifier and learning history.
 
 Two CSV files form a full manual backup:
 

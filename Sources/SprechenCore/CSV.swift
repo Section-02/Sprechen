@@ -51,34 +51,29 @@ public struct VocabularyEntry: Identifiable {
 
 public enum VocabularyCSV {
     public static func export(_ state: AppState) -> String {
-        CSV.encode([["id", "german", "english"]] + state.words.map { [$0.id.uuidString, $0.german, $0.english] })
+        CSV.encode([["german", "english"]] + state.words.map { [$0.german, $0.english] })
     }
     public static func parse(_ text: String) throws -> [VocabularyEntry] {
         let rows = try CSV.parse(text)
         guard let first = rows.first else { throw SprechenError.message("This CSV is empty.") }
         let header = first.map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
         guard let german = header.firstIndex(of: "german"), let english = header.firstIndex(of: "english"), Set(header).count == header.count else {
-            throw SprechenError.message("Use a CSV with german and english column headers. An id column is optional.")
+            throw SprechenError.message("Use a CSV with german and english column headers.")
         }
-        let idIndex = header.firstIndex(of: "id")
         return try rows.dropFirst().enumerated().map { index, row in
             guard row.count == header.count else { throw SprechenError.message("Row \(index + 2) has the wrong number of columns.") }
             let de = row[german].trimmingCharacters(in: .whitespacesAndNewlines)
             let en = row[english].trimmingCharacters(in: .whitespacesAndNewlines)
             guard !de.isEmpty && !en.isEmpty else { throw SprechenError.message("Row \(index + 2) needs both a German word and an English translation.") }
-            let id: UUID
-            if let idIndex, !row[idIndex].isEmpty {
-                guard let parsed = UUID(uuidString: row[idIndex]) else { throw SprechenError.message("Row \(index + 2) has an invalid word identifier.") }
-                id = parsed
-            } else { id = UUID() }
-            return VocabularyEntry(id: id, german: de, english: en)
+            // CSVs contain vocabulary, not device identifiers. Ignore legacy extra columns.
+            return VocabularyEntry(id: UUID(), german: de, english: en)
         }
     }
     public static func exactMatch(_ entry: VocabularyEntry, in state: AppState) -> WordPair? {
         state.words.first { $0.german == entry.german && $0.english == entry.english }
     }
     public static func conflicts(_ entry: VocabularyEntry, in state: AppState) -> [WordPair] {
-        state.words.filter { $0.id == entry.id || $0.german.localizedCaseInsensitiveCompare(entry.german) == .orderedSame || $0.english.localizedCaseInsensitiveCompare(entry.english) == .orderedSame }
+        state.words.filter { $0.german.localizedCaseInsensitiveCompare(entry.german) == .orderedSame || $0.english.localizedCaseInsensitiveCompare(entry.english) == .orderedSame }
     }
 }
 

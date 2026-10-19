@@ -240,6 +240,27 @@ final class SprechenCoreTests: XCTestCase {
         XCTAssertFalse(Pool.mixed.accepts(direction: .typeGerman))
     }
 
+    func testTwoColumnVocabularyRoundTripAndProgressRestore() throws {
+        var source = state(count: 1)
+        source.words[0].german = "der Tisch"
+        source.words[0].english = "the table"
+        Scheduler.replenish(.englishToGerman, state: &source)
+        try grade(source.words[0].id, state: &source)
+        let csv = VocabularyCSV.export(source)
+        XCTAssertEqual(try CSV.parse(csv), [["german", "english"], ["der Tisch", "the table"]])
+        let entries = try VocabularyCSV.parse(csv)
+        XCTAssertNotEqual(entries[0].id, source.words[0].id)
+        XCTAssertNotNil(VocabularyCSV.exactMatch(entries[0], in: source))
+        var other = AppState()
+        other.words = entries.map { WordPair(id: $0.id, german: $0.german, english: $0.english) }
+        let restored = try ProgressCSV.restore(ProgressCSV.export(source), into: other)
+        XCTAssertEqual(restored.progressFor(other.words[0].id, .englishToGerman)?.streak, 1)
+        XCTAssertEqual(restored.reviews[0].wordID, other.words[0].id)
+        let legacy = try VocabularyCSV.parse("id,german,english\nold-id,der Tisch,the table")
+        XCTAssertEqual(legacy[0].german, "der Tisch")
+        XCTAssertEqual(legacy[0].english, "the table")
+    }
+
     func testMissedWordHasSpacingWhenAlternativesExist() throws {
         var s = state(count: 5); Scheduler.replenish(.englishToGerman, state: &s)
         let word = try XCTUnwrap(Scheduler.next(.englishToGerman, state: s))
