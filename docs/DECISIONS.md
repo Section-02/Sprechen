@@ -3,7 +3,7 @@
 - Name: Sprechen. Intended for an iPhone 11 and an iPhone 14 Pro.
 - iOS 16 minimum; native iPhone SwiftUI app; SQLite storage.
 - Local-only runtime and independent data/settings per device. No cloud backups.
-- Three exercise tiles selected at session start. All three pools are independent.
+- Four exercise tiles selected at session start: English → German, German → English, Mixed, and Type German. All four pools are independent.
 - Each pool starts with a configurable limit of 20 word pairs and target of five consecutive correct answers.
 - Directional pools can use different pairs. Mixed requires a graded appearance in either directional pool, not both. It never pads its pool with unseen words to meet the limit.
 - Mixed is a third exercise with its own progress; it does not alter either directional exercise's streak.
@@ -17,3 +17,5 @@
 - Pause/reactivate without losing history. Reactivation resets current streaks.
 - Short sessions, immediate saving, system light/dark appearance, clean interface with playful color accents.
 - No categories, accounts, notifications, subscriptions, leaderboards, or automatic syncing.
+
+- Type German shows English, accepts a typed German answer, then reveals the stored translation for self-grading. It has independent settings and progress and does not affect Mixed eligibility.

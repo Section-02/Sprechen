@@ -1,13 +1,14 @@
 import Foundation
 
 public enum Pool: String, Codable, CaseIterable, Identifiable {
-    case englishToGerman, germanToEnglish, mixed
+    case englishToGerman, germanToEnglish, mixed, typeGerman
     public var id: String { rawValue }
     public var title: String {
         switch self {
         case .englishToGerman: return "English → German"
         case .germanToEnglish: return "German → English"
         case .mixed: return "Mixed"
+        case .typeGerman: return "Type German"
         }
     }
     public var subtitle: String {
@@ -15,8 +16,25 @@ public enum Pool: String, Codable, CaseIterable, Identifiable {
         case .englishToGerman: return "Find your German words"
         case .germanToEnglish: return "Make the meaning click"
         case .mixed: return "A little of both"
+        case .typeGerman: return "English prompt, German spelling"
         }
     }
+    public var shortTitle: String {
+        switch self {
+        case .englishToGerman: return "EN→DE"
+        case .germanToEnglish: return "DE→EN"
+        case .mixed: return "Mix"
+        case .typeGerman: return "Type"
+        }
+    }
+    public func accepts(direction: Pool) -> Bool {
+        switch self {
+        case .englishToGerman, .typeGerman: return direction == .englishToGerman
+        case .germanToEnglish: return direction == .germanToEnglish
+        case .mixed: return direction == .englishToGerman || direction == .germanToEnglish
+        }
+    }
+
 }
 
 public struct WordPair: Codable, Identifiable, Equatable {

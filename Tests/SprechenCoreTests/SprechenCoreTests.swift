@@ -13,7 +13,7 @@ final class SprechenCoreTests: XCTestCase {
         return state
     }
     func grade(_ id: UUID, pool: Pool = .englishToGerman, correct: Bool = true, state: inout AppState, at: Date? = nil) throws {
-        try Scheduler.grade(wordID: id, pool: pool, direction: pool == .mixed ? .germanToEnglish : pool, correct: correct, state: &state, now: at ?? now)
+        try Scheduler.grade(wordID: id, pool: pool, direction: pool == .mixed ? .germanToEnglish : pool == .typeGerman ? .englishToGerman : pool, correct: correct, state: &state, now: at ?? now)
     }
     func testIndependentGraduationAndReplenishment() throws {
         var s = state(count: 4, limit: 1)
@@ -188,6 +188,56 @@ final class SprechenCoreTests: XCTestCase {
         XCTAssertEqual(config.firstReviewDays, 1)
         XCTAssertEqual(config.secondReviewDays, 3)
         XCTAssertEqual(config.turn, 12)
+    }
+
+    func testTypingPoolHasIndependentProgressAndBackup() throws {
+        var s = state(count: 2, limit: 1)
+        Scheduler.replenish(.typeGerman, state: &s)
+        let word = try XCTUnwrap(Scheduler.next(.typeGerman, state: s))
+        for _ in 0..<5 { try grade(word.id, pool: .typeGerman, state: &s) }
+        XCTAssertEqual(s.progressFor(word.id, .typeGerman)?.status, .mastered)
+        XCTAssertNil(s.progressFor(word.id, .englishToGerman))
+        XCTAssertNil(s.progressFor(word.id, .germanToEnglish))
+        XCTAssertFalse(s.eligible(word, for: .mixed), "Typing does not change the original Mixed eligibility rule")
+        XCTAssertEqual(s.activeCount(.typeGerman), 1)
+        XCTAssertNotEqual(Scheduler.next(.typeGerman, state: s)?.id, word.id)
+        XCTAssertTrue(s.reviews.allSatisfy { $0.direction == .englishToGerman && $0.pool == .typeGerman })
+        let restored = try ProgressCSV.restore(ProgressCSV.export(s), into: s)
+        XCTAssertEqual(restored.progress, s.progress)
+        XCTAssertEqual(restored.reviews, s.reviews)
+        XCTAssertEqual(restored.settings, s.settings)
+    }
+
+    func testLegacyThreePoolBackupAndDatabaseGainTypingDefaults() throws {
+        var s = state(count: 1)
+        Scheduler.replenish(.englishToGerman, state: &s)
+        try grade(s.words[0].id, state: &s)
+        var rows = try CSV.parse(ProgressCSV.export(s))
+        rows.removeAll { $0.count == ProgressCSV.header.count && $0[1] == "settings" && $0[5] == Pool.typeGerman.rawValue }
+        for i in 1..<rows.count { rows[i][0] = "1" }
+        let restored = try ProgressCSV.restore(CSV.encode(rows), into: s)
+        XCTAssertEqual(restored.configuration(.typeGerman), PoolSettings())
+        XCTAssertEqual(restored.progress, s.progress)
+        XCTAssertEqual(restored.reviews, s.reviews)
+        // A current backup missing its new settings is damaged, not an old backup.
+        for i in 1..<rows.count { rows[i][0] = "2" }
+        XCTAssertThrowsError(try ProgressCSV.restore(CSV.encode(rows), into: s))
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let db = try Database(url: folder.appendingPathComponent("test.sqlite"))
+        s.settings.removeValue(forKey: Pool.typeGerman.rawValue)
+        try db.save(s)
+        let loaded = try db.load()
+        XCTAssertEqual(loaded.configuration(.typeGerman), PoolSettings())
+        XCTAssertEqual(loaded.progress, s.progress)
+    }
+
+    func testTypingRequiresEnglishToGermanDirection() throws {
+        var s = state(count: 1)
+        Scheduler.replenish(.typeGerman, state: &s)
+        XCTAssertThrowsError(try Scheduler.grade(wordID: s.words[0].id, pool: .typeGerman, direction: .germanToEnglish, correct: true, state: &s))
+        XCTAssertTrue(s.reviews.isEmpty)
+        XCTAssertFalse(Pool.mixed.accepts(direction: .typeGerman))
     }
 
     func testMissedWordHasSpacingWhenAlternativesExist() throws {

@@ -52,7 +52,7 @@ public enum Scheduler {
     public static func grade(wordID: UUID, pool: Pool, direction: Pool, correct: Bool, state: inout AppState, now: Date = Date()) throws {
         guard let word = state.words.first(where: { $0.id == wordID }), state.eligible(word, for: pool),
               var progress = state.progressFor(wordID, pool), progress.active, progress.status != .mastered,
-              direction != .mixed, pool == .mixed || direction == pool else {
+              pool.accepts(direction: direction) else {
             throw SprechenError.message("This card is no longer available for this exercise.")
         }
         if progress.status == .reinforce && (progress.dueAt ?? .distantFuture) > now {

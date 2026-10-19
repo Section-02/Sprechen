@@ -8,6 +8,8 @@ struct StudySession: View {
     let pool: Pool
     @State private var word: WordPair?
     @State private var direction = Pool.englishToGerman
+    @State private var typedAnswer = ""
+    @FocusState private var typingFocused: Bool
     @State private var revealed = false
     @State private var answered = 0
     @State private var correct = 0
@@ -55,7 +57,7 @@ struct StudySession: View {
                                     .font(.title2.weight(.semibold)).foregroundStyle(pool.color).multilineTextAlignment(.center)
                                     .accessibilityLabel("Answer: \(direction == .englishToGerman ? word.german : word.english)")
                             } else {
-                                Text("Say it aloud, or think it through.").font(.subheadline).foregroundStyle(.secondary)
+                                Text(pool == .typeGerman ? "Type the German translation." : "Say it aloud, or think it through.").font(.subheadline).foregroundStyle(.secondary)
                             }
                             let streak = model.state.progressFor(word.id, pool)?.streak ?? 0
                             Text("\(streak) consecutive correct · target \(model.state.configuration(pool).target)")
@@ -65,6 +67,22 @@ struct StudySession: View {
                         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 28))
                         .overlay(RoundedRectangle(cornerRadius: 28).strokeBorder(pool.color.opacity(0.20)))
 
+                        if pool == .typeGerman {
+                            if revealed {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("YOUR ANSWER").font(.caption.bold()).foregroundStyle(.secondary)
+                                    Text(typedAnswer.isEmpty ? "—" : typedAnswer).font(.title3)
+                                }.frame(maxWidth: .infinity, alignment: .leading).padding()
+                                    .background(pool.color.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+                            } else {
+                                TextField("German answer", text: $typedAnswer)
+                                    .font(.title3).textFieldStyle(.roundedBorder)
+                                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                                    .focused($typingFocused).submitLabel(.done)
+                                    .accessibilityLabel("Your German translation")
+                                    .onSubmit { if !typedAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { revealAnswer() } }
+                            }
+                        }
                         if !speech.transcript.isEmpty {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("YOU SAID").font(.caption.bold()).foregroundStyle(.secondary)
@@ -74,15 +92,22 @@ struct StudySession: View {
                         }
                         if let message = speech.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
                         if !revealed {
-                            Button {
-                                if speech.isRecording { speech.finish() }
-                                else { Task { await speech.start(direction: direction) } }
-                            } label: {
-                                Label(speech.isStarting ? "Preparing microphone…" : speech.isRecording ? "Stop listening" : speech.transcript.isEmpty ? "Speak your answer" : "Try speaking again", systemImage: speech.isRecording ? "stop.circle.fill" : "mic.fill")
-                                    .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            }.disabled(speech.isStarting).buttonStyle(.bordered).tint(pool.color)
-                            Button("Reveal answer") { speech.stop(); revealed = true }
-                                .buttonStyle(PrimaryButtonStyle(color: pool.color))
+                            if pool == .typeGerman {
+                                Button("Check answer") { revealAnswer() }
+                                    .buttonStyle(PrimaryButtonStyle(color: pool.color))
+                                    .disabled(typedAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                Button("I don’t know") { revealAnswer() }.font(.subheadline)
+                            } else {
+                                Button {
+                                    if speech.isRecording { speech.finish() }
+                                    else { Task { await speech.start(direction: direction) } }
+                                } label: {
+                                    Label(speech.isStarting ? "Preparing microphone…" : speech.isRecording ? "Stop listening" : speech.transcript.isEmpty ? "Speak your answer" : "Try speaking again", systemImage: speech.isRecording ? "stop.circle.fill" : "mic.fill")
+                                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                }.disabled(speech.isStarting).buttonStyle(.bordered).tint(pool.color)
+                                Button("Reveal answer") { revealAnswer() }
+                                    .buttonStyle(PrimaryButtonStyle(color: pool.color))
+                            }
                         } else {
                             ViewThatFits(in: .horizontal) {
                                 HStack(spacing: 12) { gradeButtons }
@@ -102,7 +127,7 @@ struct StudySession: View {
             .navigationTitle(pool.title).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if !finished { Button("Finish") { speech.stop(); finished = true } }
+                    if !finished { Button("Finish") { typingFocused = false; speech.stop(); finished = true } }
                 }
             }
             .onAppear { loadNext() }
@@ -137,14 +162,19 @@ struct StudySession: View {
             }
             Button("Another session") { speech.stop(); dismiss() }
                 .buttonStyle(PrimaryButtonStyle(color: pool.color))
-            Button("Finish session") { speech.stop(); finished = true }
+            Button("Finish session") { typingFocused = false; speech.stop(); finished = true }
                 .buttonStyle(.bordered).controlSize(.large)
         }
     }
     private func loadNext(excluding: UUID? = nil) {
-        speech.clear(); revealed = false
+        speech.clear(); revealed = false; typedAnswer = ""; typingFocused = false
         word = Scheduler.next(pool, state: model.state, excluding: excluding)
-        direction = pool == .mixed ? (Bool.random() ? .englishToGerman : .germanToEnglish) : pool
+        direction = pool == .mixed ? (Bool.random() ? .englishToGerman : .germanToEnglish) : pool == .typeGerman ? .englishToGerman : pool
+    }
+    private func revealAnswer() {
+        typingFocused = false
+        speech.stop()
+        revealed = true
     }
     private func submit(_ result: Bool) {
         guard revealed, let word else { return }

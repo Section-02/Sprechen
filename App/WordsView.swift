@@ -40,7 +40,7 @@ struct WordsView: View {
                             HStack(spacing: 10) {
                                 ForEach(Pool.allCases) { pool in
                                     if let p = model.state.progressFor(word.id, pool) {
-                                        Text("\(pool == .englishToGerman ? "EN→DE" : pool == .germanToEnglish ? "DE→EN" : "Mix"): \(p.status == .mastered ? "✓" : String(p.streak))")
+                                        Text("\(pool.shortTitle): \(p.status == .mastered ? "✓" : String(p.streak))")
                                             .font(.caption2.weight(.medium)).foregroundStyle(pool.color)
                                     }
                                 }
@@ -91,7 +91,7 @@ struct WordEditor: View {
                     }
                     Section {
                         Button { model.pause(current); dismiss() } label: { Label(current.paused ? "Reactivate word" : "Pause word", systemImage: current.paused ? "play.circle" : "pause.circle") }
-                        Text(current.paused ? "Reactivation preserves history and starts fresh streaks in each previously used pool." : "Pausing hides this pair from all three exercises and preserves its history.").font(.footnote).foregroundStyle(.secondary)
+                        Text(current.paused ? "Reactivation preserves history and starts fresh streaks in each previously used pool." : "Pausing hides this pair from all exercises and preserves its history.").font(.footnote).foregroundStyle(.secondary)
                     }
                     Section { Button("Delete word and its history", role: .destructive) { showDelete = true } }
                 }

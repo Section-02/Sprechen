@@ -13,8 +13,9 @@ The app targets iOS 16 and uses availability-compatible APIs. The first build wa
 
 ## Study
 
-The home screen has **English → German**, **German → English**, and **Mixed** tiles. Each pool independently defaults to 20 active pairs and a five-answer consecutive-correct target. Change these per pool in Settings (1–500 pairs, 1–50 consecutive correct answers).
+The home screen has **English → German**, **German → English**, **Mixed**, and **Type German** tiles. Each pool independently defaults to 20 active pairs and a five-answer consecutive-correct target. Change these per pool in Settings (1–500 pairs, 1–50 consecutive correct answers).
 
+- **Type German** shows an English prompt and a text field for the German answer, including the article. Tap Check answer (or the keyboard’s Done key), compare your answer, then self-grade. Autocorrection is disabled; this exercise has no microphone button. Its pool, streaks, Reinforce timing, and settings are independent. Typing alone does not make a word eligible for Mixed.
 - Each directional pool independently chooses from the vocabulary list; their pairs may overlap or differ.
 - Mixed can use a pair after **at least one graded answer in either directional pool**, even if that answer was incorrect. Merely opening/revealing a card does not count.
 - Mixed uses its own streak and graduation state, with a randomly selected translation direction on each card. Its streak spans both directions.
@@ -44,7 +45,7 @@ Exports add a stable `id` column. Quoted fields, commas, multiline text, UTF-8 B
 Two CSV files form a full manual backup:
 
 - **Vocabulary CSV:** transferable words, with no progress/settings.
-- **Progress CSV:** pause state, creation dates, all three pools, settings, and full answer history. Its versioned CSV envelope uses JSON in the `data` column to preserve record types and precision. Import the corresponding vocabulary first. Restore matches exact word-pair text even when identifiers differ across phones, validates the entire file, and asks before replacing local progress/settings. Extra vocabulary already on the device remains.
+- **Progress CSV:** pause state, creation dates, all four pools, settings, and full answer history. Its versioned CSV envelope uses JSON in the `data` column to preserve record types and precision. Version 2 includes Type German. Version 1 backups from before this exercise still restore, giving the new pool its default settings. Import the corresponding vocabulary first. Restore matches exact word-pair text even when identifiers differ across phones, validates the entire file, and asks before replacing local progress/settings. Extra vocabulary already on the device remains.
 
 Choose **On My iPhone** or another local destination when exporting. iOS's Files picker can offer external/cloud destinations; an explicit exported copy is outside the app's storage and backup control. Sprechen itself never initiates a network transfer. Keep copies on a local Mac if desired. Share only the vocabulary CSV to give another device the words while keeping progress independent.
 

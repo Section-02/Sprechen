@@ -71,7 +71,7 @@ public final class Database {
             for p in state.progress.values where old.progress[p.key] != p { try insert("progress", id: p.key, wordID: p.wordID, value: p) }
             for (id, config) in state.settings where old.settings[id] != config { try insert("settings", id: id, value: config) }
             for event in state.reviews where oldReviews[event.id] != event { try insert("reviews", id: event.id.uuidString, wordID: event.wordID, value: event) }
-            // Defaults are virtual on an empty database; materialize all three configurations.
+            // Defaults are virtual on an empty database; materialize all exercise configurations.
             if old.words.isEmpty && old.reviews.isEmpty {
                 for (id, config) in state.settings { try insert("settings", id: id, value: config) }
             }

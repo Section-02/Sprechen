@@ -36,10 +36,10 @@ struct RootView: View {
 
 extension Pool {
     var color: Color {
-        switch self { case .englishToGerman: return .teal; case .germanToEnglish: return .indigo; case .mixed: return .orange }
+        switch self { case .englishToGerman: return .teal; case .germanToEnglish: return .indigo; case .mixed: return .orange; case .typeGerman: return .purple }
     }
     var symbol: String {
-        switch self { case .englishToGerman: return "bubble.left.and.text.bubble.right.fill"; case .germanToEnglish: return "text.bubble.fill"; case .mixed: return "shuffle" }
+        switch self { case .englishToGerman: return "bubble.left.and.text.bubble.right.fill"; case .germanToEnglish: return "text.bubble.fill"; case .mixed: return "shuffle"; case .typeGerman: return "keyboard" }
     }
 }
 

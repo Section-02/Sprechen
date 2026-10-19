@@ -91,7 +91,7 @@ public enum ProgressCSV {
         func json<T: Encodable>(_ value: T) throws -> String { String(decoding: try encoder.encode(value), as: UTF8.self) }
         func row(_ type: String, _ wordID: UUID?, _ pool: String, _ data: String) -> [String] {
             let word = state.words.first { $0.id == wordID }
-            return ["1", type, wordID?.uuidString ?? "", word?.german ?? "", word?.english ?? "", pool, data]
+            return ["2", type, wordID?.uuidString ?? "", word?.german ?? "", word?.english ?? "", pool, data]
         }
         var rows = [header]
         for word in state.words { rows.append(row("word", word.id, "", try json(word))) }
@@ -110,7 +110,7 @@ public enum ProgressCSV {
         result.progress = [:]; result.reviews = []; result.settings = [:]
         var mapping: [UUID: UUID] = [:], seenWords = Set<UUID>(), seenReviews = Set<UUID>()
         let records = Array(rows.dropFirst())
-        guard records.allSatisfy({ $0.count == header.count && $0[0] == "1" }) else { throw SprechenError.message("Unsupported or damaged progress CSV.") }
+        guard let version = records.first?.first, ["1", "2"].contains(version), records.allSatisfy({ $0.count == header.count && $0[0] == version }) else { throw SprechenError.message("Unsupported or damaged progress CSV.") }
         for row in records where row[1] == "word" {
             let word = try decoder.decode(WordPair.self, from: Data(row[6].utf8))
             guard row[2] == word.id.uuidString, row[3] == word.german, row[4] == word.english, seenWords.insert(word.id).inserted,
@@ -144,11 +144,17 @@ public enum ProgressCSV {
             case "review":
                 var event = try decoder.decode(Review.self, from: data)
                 guard row[2] == event.wordID.uuidString, row[5] == event.pool.rawValue, let mapped = mapping[event.wordID],
-                      event.direction != .mixed, event.pool == .mixed || event.pool == event.direction,
+                      event.pool.accepts(direction: event.direction),
                       seenReviews.insert(event.id).inserted else { throw SprechenError.message("Invalid review history.") }
                 event.wordID = mapped; result.reviews.append(event)
             default: throw SprechenError.message("Unknown record type in progress CSV.")
             }
+        }
+        // Version 1 predates Type German. Restore those backups with an empty new pool.
+        if version == "1", result.settings[Pool.typeGerman.rawValue] == nil,
+           !result.progress.values.contains(where: { $0.pool == .typeGerman }),
+           !result.reviews.contains(where: { $0.pool == .typeGerman }) {
+            result.settings[Pool.typeGerman.rawValue] = PoolSettings()
         }
         guard result.settings.count == Pool.allCases.count else { throw SprechenError.message("The backup is missing study settings.") }
         for pool in Pool.allCases {
