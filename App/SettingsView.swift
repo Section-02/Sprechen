@@ -109,15 +109,16 @@ struct VocabularyImportView: View {
                         TextField("German", text: $german).autocorrectionDisabled().textInputAutocapitalization(.never)
                         TextField("English", text: $english).autocorrectionDisabled().textInputAutocapitalization(.never)
                         if let validation { Text(validation).font(.footnote).foregroundStyle(.red) }
-                        Button("Check changed pair") { resolveEdited() }
+                        Button("Replace") { replaceIncoming() }
                         Button("Skip this row") { skipped += 1; advance() }
                     }
                     Section("Existing pairs") {
                         ForEach(conflicts) { word in
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("\(word.german) — \(word.english)").font(.headline)
-                                Button("Replace this pair with the text above") { replace(word) }
-                                    .font(.subheadline)
+                                if conflicts.count > 1 {
+                                    Button("Replace this pair") { replace(word) }.font(.subheadline)
+                                }
                                 Text("Keeps this pair’s learning history.").font(.caption).foregroundStyle(.secondary)
                             }.padding(.vertical, 5)
                         }
@@ -158,13 +159,11 @@ struct VocabularyImportView: View {
         guard !de.isEmpty && !en.isEmpty else { validation = "Both fields are required."; return nil }
         return VocabularyEntry(id: entries[index].id, german: de, english: en)
     }
-    private func resolveEdited() {
-        guard let entry = editedEntry() else { return }
-        if VocabularyCSV.exactMatch(entry, in: staged) != nil { skipped += 1; advance(); return }
-        let matches = VocabularyCSV.conflicts(entry, in: staged)
-        if !matches.isEmpty { conflicts = matches; validation = "There is still a conflict. Replace a listed pair or skip this row."; return }
-        staged.words.append(WordPair(id: entry.id, german: entry.german, english: entry.english))
-        added += 1; advance()
+    private func replaceIncoming() {
+        guard conflicts.count == 1, let word = conflicts.first else {
+            validation = "Choose the existing pair to replace below."; return
+        }
+        replace(word)
     }
     private func replace(_ word: WordPair) {
         guard let entry = editedEntry(), let target = staged.words.firstIndex(where: { $0.id == word.id }) else { return }
