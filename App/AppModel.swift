@@ -42,7 +42,7 @@ final class AppModel: ObservableObject {
         let en = english.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !de.isEmpty && !en.isEmpty else { error = "Please enter both words."; return false }
         return update { state in
-            guard !state.words.contains(where: { $0.id != id && $0.german == de && $0.english == en }) else { throw SprechenError.message("That exact word pair is already in your vocabulary.") }
+            try VocabularyCSV.validateUniqueGerman(de, excluding: id, in: state)
             if let id, let index = state.words.firstIndex(where: { $0.id == id }) {
                 state.words[index].german = de; state.words[index].english = en
             } else { state.words.append(WordPair(german: de, english: en)) }

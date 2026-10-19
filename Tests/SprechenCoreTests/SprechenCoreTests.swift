@@ -261,6 +261,50 @@ final class SprechenCoreTests: XCTestCase {
         XCTAssertEqual(legacy[0].english, "the table")
     }
 
+    func testGermanIdentityAllowsSharedEnglishAndRejectsDuplicateGerman() throws {
+        var s = AppState()
+        let existing = WordPair(german: "der Cousin", english: "cousin")
+        s.words = [existing]
+        let cousin = VocabularyEntry(id: UUID(), german: "die Cousine", english: "cousin")
+        XCTAssertTrue(VocabularyCSV.conflicts(cousin, in: s).isEmpty)
+        XCTAssertNoThrow(try VocabularyCSV.validateUniqueGerman(cousin.german, in: s))
+        let duplicate = VocabularyEntry(id: UUID(), german: " Der Cousin ", english: "Cousin")
+        XCTAssertEqual(VocabularyCSV.exactMatch(duplicate, in: s)?.id, existing.id)
+        XCTAssertThrowsError(try VocabularyCSV.validateUniqueGerman(duplicate.german, in: s))
+        XCTAssertNoThrow(try VocabularyCSV.validateUniqueGerman(duplicate.german, excluding: existing.id, in: s))
+        let differentTranslation = VocabularyEntry(id: UUID(), german: "der Cousin", english: "male cousin")
+        XCTAssertNil(VocabularyCSV.exactMatch(differentTranslation, in: s))
+        XCTAssertEqual(VocabularyCSV.conflicts(differentTranslation, in: s).map(\.id), [existing.id])
+        XCTAssertFalse(VocabularyCSV.sameText("schön", "schon"))
+        XCTAssertFalse(VocabularyCSV.sameText("Maße", "Masse"))
+    }
+
+    func testDuplicateGermanWithinFileRequiresReviewButSharedEnglishDoesNot() throws {
+        let entries = try VocabularyCSV.parse("german,english\ndie Cousine,cousin\nder Cousin,cousin\ndas Restaurant,restaurant\nDas Restaurant,the restaurant\nDER COUSIN,Cousin")
+        var staged = AppState()
+        var conflicts: [String] = []
+        var skipped = 0
+        for entry in entries {
+            if VocabularyCSV.exactMatch(entry, in: staged) != nil { skipped += 1 }
+            else if !VocabularyCSV.conflicts(entry, in: staged).isEmpty { conflicts.append(entry.german) }
+            else { staged.words.append(WordPair(id: entry.id, german: entry.german, english: entry.english)) }
+        }
+        XCTAssertEqual(staged.words.count, 3)
+        XCTAssertEqual(conflicts, ["Das Restaurant"])
+        XCTAssertEqual(skipped, 1)
+    }
+
+    func testProgressRestoreMatchesCaseOnlyVocabularyDifferences() throws {
+        var source = state(count: 1)
+        source.words[0].german = "der Tisch"; source.words[0].english = "table"
+        Scheduler.replenish(.englishToGerman, state: &source)
+        try grade(source.words[0].id, state: &source)
+        var destination = AppState()
+        destination.words = [WordPair(german: "Der Tisch", english: "Table")]
+        let restored = try ProgressCSV.restore(ProgressCSV.export(source), into: destination)
+        XCTAssertEqual(restored.progressFor(destination.words[0].id, .englishToGerman)?.streak, 1)
+    }
+
     func testMissedWordHasSpacingWhenAlternativesExist() throws {
         var s = state(count: 5); Scheduler.replenish(.englishToGerman, state: &s)
         let word = try XCTUnwrap(Scheduler.next(.englishToGerman, state: s))

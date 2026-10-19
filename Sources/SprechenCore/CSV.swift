@@ -69,11 +69,23 @@ public enum VocabularyCSV {
             return VocabularyEntry(id: UUID(), german: de, english: en)
         }
     }
+    public static func sameText(_ lhs: String, _ rhs: String) -> Bool {
+        func normalized(_ value: String) -> String {
+            value.trimmingCharacters(in: .whitespacesAndNewlines)
+                .precomposedStringWithCanonicalMapping.lowercased(with: Locale(identifier: "de_DE"))
+        }
+        return normalized(lhs) == normalized(rhs)
+    }
+    public static func validateUniqueGerman(_ german: String, excluding id: UUID? = nil, in state: AppState) throws {
+        guard !state.words.contains(where: { $0.id != id && sameText($0.german, german) }) else {
+            throw SprechenError.message("That German word already exists. Edit the existing word or skip this row.")
+        }
+    }
     public static func exactMatch(_ entry: VocabularyEntry, in state: AppState) -> WordPair? {
-        state.words.first { $0.german == entry.german && $0.english == entry.english }
+        state.words.first { sameText($0.german, entry.german) && sameText($0.english, entry.english) }
     }
     public static func conflicts(_ entry: VocabularyEntry, in state: AppState) -> [WordPair] {
-        state.words.filter { $0.german.localizedCaseInsensitiveCompare(entry.german) == .orderedSame || $0.english.localizedCaseInsensitiveCompare(entry.english) == .orderedSame }
+        state.words.filter { sameText($0.german, entry.german) }
     }
 }
 
@@ -109,7 +121,7 @@ public enum ProgressCSV {
         for row in records where row[1] == "word" {
             let word = try decoder.decode(WordPair.self, from: Data(row[6].utf8))
             guard row[2] == word.id.uuidString, row[3] == word.german, row[4] == word.english, seenWords.insert(word.id).inserted,
-                  let index = result.words.firstIndex(where: { $0.german == word.german && $0.english == word.english }) else {
+                  let index = result.words.firstIndex(where: { VocabularyCSV.sameText($0.german, word.german) && VocabularyCSV.sameText($0.english, word.english) }) else {
                 throw SprechenError.message("A backed-up word is missing or differs from your vocabulary. Import the matching vocabulary CSV first.")
             }
             guard !mapping.values.contains(result.words[index].id) else { throw SprechenError.message("The progress CSV contains duplicate vocabulary.") }

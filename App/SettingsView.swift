@@ -104,7 +104,7 @@ struct VocabularyImportView: View {
                 }
                 if index < entries.count {
                     Section("Resolve this conflict") {
-                        Text("This pair shares a word with existing vocabulary. Change the incoming text, replace a listed pair, or skip this row.")
+                        Text("This German word already has a different translation. Change the incoming text, replace a listed pair, or skip this row.")
                             .font(.subheadline).foregroundStyle(.secondary)
                         TextField("German", text: $german).autocorrectionDisabled().textInputAutocapitalization(.never)
                         TextField("English", text: $english).autocorrectionDisabled().textInputAutocapitalization(.never)
@@ -168,9 +168,8 @@ struct VocabularyImportView: View {
     }
     private func replace(_ word: WordPair) {
         guard let entry = editedEntry(), let target = staged.words.firstIndex(where: { $0.id == word.id }) else { return }
-        guard !staged.words.contains(where: { $0.id != word.id && $0.german == entry.german && $0.english == entry.english }) else {
-            validation = "That exact pair already exists. Skip this row instead."; return
-        }
+        do { try VocabularyCSV.validateUniqueGerman(entry.german, excluding: word.id, in: staged) }
+        catch { validation = error.localizedDescription; return }
         staged.words[target].german = entry.german; staged.words[target].english = entry.english
         changed += 1; advance()
     }
