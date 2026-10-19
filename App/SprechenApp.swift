@@ -63,8 +63,6 @@ struct StudyHome: View {
                             if model.start(pool) { selection = pool }
                         } label: { PoolTile(pool: pool) }.buttonStyle(.plain)
                     }
-                    Label("Your words. Your pace. Saved on this iPhone.", systemImage: "iphone")
-                        .font(.footnote).foregroundStyle(.secondary)
                     if model.state.words.isEmpty {
                         Text("Start in Words: add a pair yourself or import a vocabulary CSV.")
                             .font(.callout).padding().frame(maxWidth: .infinity, alignment: .leading)
