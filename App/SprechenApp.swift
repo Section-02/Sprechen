@@ -71,8 +71,7 @@ struct StudyHome: View {
                 }.padding(22)
             }
             .background(Color(uiColor: .systemGroupedBackground))
-            .navigationTitle("Sprechen")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             .fullScreenCover(item: $selection) { pool in StudySession(pool: pool).environmentObject(model) }
         }
     }

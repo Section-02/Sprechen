@@ -23,7 +23,8 @@ struct StudySession: View {
                         Image(systemName: "hands.clap.fill").font(.system(size: 58)).foregroundStyle(.teal).padding(.top, 40)
                         Text("A little progress, saved.").font(.title.bold()).multilineTextAlignment(.center)
                         Text("\(answered) answers · \(correct) correct").foregroundStyle(.secondary)
-                        Text("Come back whenever you’re ready.").foregroundStyle(.secondary)
+                        Button("Another session") { speech.stop(); dismiss() }
+                            .buttonStyle(PrimaryButtonStyle(color: pool.color))
                         Button("Done") { dismiss() }.buttonStyle(PrimaryButtonStyle(color: .teal))
                     } else if let word {
                         HStack {
@@ -134,7 +135,10 @@ struct StudySession: View {
                 Text("No cards are ready in this pool. Add words, reactivate paused words, or enjoy your progress.")
                     .foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
-            Button("Finish session") { finished = true }.buttonStyle(PrimaryButtonStyle(color: pool.color))
+            Button("Another session") { speech.stop(); dismiss() }
+                .buttonStyle(PrimaryButtonStyle(color: pool.color))
+            Button("Finish session") { speech.stop(); finished = true }
+                .buttonStyle(.bordered).controlSize(.large)
         }
     }
     private func loadNext(excluding: UUID? = nil) {
